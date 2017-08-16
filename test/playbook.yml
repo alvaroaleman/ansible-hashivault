@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  gather_facts: false
+  environment:
+    VAULT_ADDR: 'http://127.0.0.1:8300'
+    VAULT_TOKEN: 'helloworld'
+  tasks:
+    - hashivault_authbackend:
+        state: present
+        backend_type: approle
