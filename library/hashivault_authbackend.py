@@ -56,19 +56,20 @@ def main():
                              'environment variable!')
 
     conn = HashivaultConnection(ANSIBLE_HASHI_VAULT_ADDR, token, module.check_mode)
-    enabled_backends = conn.make_request('/v1/sys/auth')
+    enabled_backends = conn.make_request('/v1/sys/auth')[0].get('data', {})
 
     if module.params['state'] == 'present':
-        module.exit_json(msg=enabled_backends)
         if '%s/' % module.params['backend_type'] in enabled_backends:
             module.exit_json(changed=False)
         else:
             data = '{"type": "%s"}' % module.params['backend_type']
             uri = '/v1/sys/auth/%s' % module.params['backend_type']
             response = conn.make_request(uri, method='POST', data=data)
-            if response[1] != 204:
+            if response[1] not in [200, 204]:
                 module.fail_json(msg='Error creating auth backend "%s": "%s"'
                         % (module.params['backend_type'], response[0]))
+            else:
+                module.exit_json(changed=True)
 
 
 if __name__ == '__main__':
