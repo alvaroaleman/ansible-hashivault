@@ -8,18 +8,11 @@ def main():
     supports_check_mode = True
     )
 
-    token = ''
-    if os.getenv('VAULT_TOKEN') is not None:
-        token = os.environ['VAULT_TOKEN']
+    try:
+        conn = HashivaultConnection(token=module.params['token'], dry_mode=module.check_mode)
+    except Exception as e:
+        module.fail_json(msg=e.message)
 
-    if module.params['token']:
-        token = module.params['token']
-
-    if not token:
-        module.fail_json(msg='You must submit a vault token via parameter or the VAULT_TOKEN'
-                             'environment variable!')
-
-    conn = HashivaultConnection(token, dry_mode=module.check_mode)
     enabled_backends = conn.make_request('/v1/sys/auth')[0].get('data', {})
 
     backend_mounted = '%s/' % module.params['backend_type'] in enabled_backends

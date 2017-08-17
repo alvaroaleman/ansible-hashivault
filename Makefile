@@ -1,6 +1,6 @@
 .PHONY: hashivault_authbackend-test
 hashivault_authbackend-test: library/hashivault_authbackend.py
-	ansible-playbook test/playbook.yml -t testsetup,hashivault_authbackend
+	ansible-playbook test/playbook.yml -t testsetup,hashivault_authbackend -vvvv
 
 .PHONY: library/hashivault_authbackend.py
 library/hashivault_authbackend.py:

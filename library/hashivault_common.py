@@ -9,17 +9,33 @@ from ansible.module_utils.basic import AnsibleModule
 
 
 ANSIBLE_HASHI_VAULT_ADDR = 'http://127.0.0.1:8200'
+ANSIBLE_HASHI_VAULT_TOKEN = os.environ.get('VAULT_TOKEN')
 
 if os.getenv('VAULT_ADDR') is not None:
     ANSIBLE_HASHI_VAULT_ADDR = os.environ['VAULT_ADDR']
 
+
 class NoVaultURLException(Exception):
-    pass
+    def __init__(self):
+        msg = "No vault url available! Declare it via the VAULT_ADDR environment variable."
+        super(NoVaultURLException, self).__init__(msg)
+
+
+class NoVaultTokenExecption(Exception):
+    def __init__(self):
+        msg = "No vault token available! Declare it via the VAULT_TOKEN environment variable"\
+                " or as module parameter"
+        super(NoVaultTokenExecption, self).__init__(msg)
+
 
 class HashivaultConnection(object):
-    def __init__(self, token, vault_url=None, dry_mode=False):
+    def __init__(self, token=None, vault_url=None, dry_mode=False):
         if not vault_url:
             vault_url = ANSIBLE_HASHI_VAULT_ADDR
+        if not token and not ANSIBLE_HASHI_VAULT_TOKEN:
+            raise NoVaultTokenExecption()
+        if not token and ANSIBLE_HASHI_VAULT_TOKEN:
+            token = ANSIBLE_HASHI_VAULT_TOKEN
         self.vault_url = vault_url
         self.token = token
         self.dry_mode = dry_mode
