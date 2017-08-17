@@ -19,6 +19,24 @@
           VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
         published_ports:
           - '127.0.0.1:8300:8200'
+    - name: Test hashivault_policy
+      tags:
+        - hashivault_policy
+      block:
+      - name: Create test policy
+        register: registered_policy_creation
+        hashivault_policy:
+          name: test
+          rules:
+            - path "secret/foo" { policy="write" }
+            #      - name: Remove test policy
+            #        register: registered_policy_removed
+            #        hashivault_policy:
+            #          name: test
+            #          state: absent
+            #      - name: Assert policy got removed
+            #        assert:
+            #          that: registered_policy_removed.changed
     - name: Test hashivault_authbackend
       tags:
         - hashivault_authbackend
@@ -86,9 +104,9 @@
       - name: Assert approle backend deletion idempotence
         assert:
           that: not registered_approle_backend_delete_idempotence.changed
-    - always:
-        - name: Remove vault container
-          tags: testsetup
-          docker_container:
-            state: absent
-            name: "{{ vault_containername }}"
+          #    - always:
+          #        - name: Remove vault container
+          #          tags: testsetup
+          #          docker_container:
+          #            state: absent
+          #            name: "{{ vault_containername }}"
