@@ -37,3 +37,34 @@
     - name: Assert approle backend creation idempotence
       assert:
         that: not registered_approle_backend_idempotence.changed
+
+    - name: Delete approle backend in checkmode
+      check_mode: true
+      register: registered_approle_backend_delete_checkmode
+      hashivault_authbackend:
+        state: absent
+        backend_type: approle
+
+    - name: Assert approle backend deletion in checkmode caused changed event
+      assert:
+        that: registered_approle_backend_delete_checkmode.changed
+
+    - name: Delete approle backend
+      register: registered_approle_backend_delete
+      hashivault_authbackend:
+        state: absent
+        backend_type: approle
+
+    - name: Assert approle backend deletion caused changed event
+      assert:
+        that: registered_approle_backend_delete.changed
+
+    - name: Test approle backend deletion idempotence
+      register: registered_approle_backend_delete_idempotence
+      hashivault_authbackend:
+        state: absent
+        backend_type: approle
+
+    - name: Assert approle backend deletion idempotence
+      assert:
+        that: not registered_approle_backend_delete_idempotence.changed

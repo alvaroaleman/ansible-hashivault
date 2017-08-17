@@ -33,6 +33,17 @@ class HashivaultConnection(object):
                 else:
                     content = response.json()
                 return (content, response.status_code)
+        if method == 'DELETE':
+            if self.dry_mode:
+                return ({}, 200)
+            else:
+                response = requests.delete('%s%s' % (self.vault_url, uri),
+                        headers=self.headers, data=data)
+                if response.status_code == 204:
+                    content = ''
+                else:
+                    content = response.json()
+                return (content, response.status_code)
 
 def main():
     module = AnsibleModule(
@@ -58,8 +69,23 @@ def main():
     conn = HashivaultConnection(ANSIBLE_HASHI_VAULT_ADDR, token, module.check_mode)
     enabled_backends = conn.make_request('/v1/sys/auth')[0].get('data', {})
 
-    if module.params['state'] == 'present':
-        if '%s/' % module.params['backend_type'] in enabled_backends:
+    backend_mounted = '%s/' % module.params['backend_type'] in enabled_backends
+
+    if backend_mounted:
+        if module.params['state'] == 'present':
+            module.exit_json(changed=False)
+        else:
+            uri = '/v1/sys/auth/%s' % module.params['backend_type']
+            response = conn.make_request(uri, method='DELETE')
+
+            if response[1] not in [200, 204]:
+                module.fail_json(msg='Error deleting auth backend "%s": "%s"'
+                        % (module.params['backend_type'], response[0]))
+            else:
+                module.exit_json(changed=True)
+
+    else:
+        if module.params['state'] == 'absent':
             module.exit_json(changed=False)
         else:
             data = '{"type": "%s"}' % module.params['backend_type']
