@@ -19,57 +19,70 @@
           VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
         published_ports:
           - '127.0.0.1:8300:8200'
+
     - name: Test hashivault_policy
       tags:
         - hashivault_policy
       block:
+
       - name: Create test policy in checkmode
         check_mode: true
         register: registered_policy_creation_checkmode
         hashivault_policy:
           name: test
           rules: path "secret/foo" { policy="write" }
+
       - name: Assert creating test policy in checkmode caused changed event
         assert:
           that: registered_policy_creation_checkmode.changed
+
       - name: Create test policy
         register: registered_policy_creation
         hashivault_policy:
           name: test
           rules: path "secret/foo" { policy="write" }
+
       - name: Assert creating test policy caused changed event
         assert:
           that: registered_policy_creation.changed
+
       - name: Test policy creation idempotence
         register: registered_policy_creation_idempotence
         hashivault_policy:
           name: test
           rules: path "secret/foo" { policy="write" }
+
       - name: Assert policy creation idempotence
         assert:
           that: not registered_policy_creation_idempotence.changed
+
       - name: Test removing policy in checkmode
         check_mode: true
         register: registered_policy_removal_checkmode
         hashivault_policy:
           state: absent
           name: test
+
       - name: Assert removing policy in checkmode caused changed event
         assert:
           that: registered_policy_removal_checkmode.changed
+
       - name: Test removing policy
         register: registered_policy_removal
         hashivault_policy:
           state: absent
           name: test
+
       - name: Assert removing policy in checkmode caused changed event
         assert:
           that: registered_policy_removal.changed
+
       - name: Test removing policy idempotence
         register: registered_policy_removal_idempotence
         hashivault_policy:
           state: absent
           name: test
+
       - name: Assert policy removal idempotence
         assert:
           that: not registered_policy_removal_idempotence.changed
@@ -140,7 +153,9 @@
       - name: Assert approle backend deletion idempotence
         assert:
           that: not registered_approle_backend_delete_idempotence.changed
+
     - always:
+
         - name: Remove vault container
           tags: testsetup
           docker_container:
