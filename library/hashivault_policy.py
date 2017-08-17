@@ -96,36 +96,32 @@ def main():
             if module.params['state'] == 'present':
                 current_rules = conn.make_request('/v1/sys/policy/%s' % policy_name)[0]['rules']
 
-                if not are_rules_equal(current_rules, desired_rules):
-
-                    response = write_policy(policy_name, desired_rules, conn)
-                    if response[1] not in [200, 204]:
-                        module.fail_json(msg='Error creating policy "%s" with rules "%s": "%s"'
-                                % (policy_name, data, response[0]))
-                    else:
-                        module.exit_json(changed=True)
+                if are_rules_equal(current_rules, desired_rules):
+                    module.exit_json(changed=False)
                 else:
-                    module.exit_json()
+                    write_policy(policy_name, desired_rules, conn, module)
+                    module.exit_json(changed=True)
             else:
                 conn.make_request('/v1/sys/policy/%s' % policy_name, method='DELETE')
                 module.exit_json(changed=True)
         else:
             if module.params['state'] == 'absent':
-                module.exit_json()
+                module.exit_json(changed=False)
             else:
-                response = write_policy(policy_name, desired_rules, conn)
-                if response[1] not in [200, 204]:
-                    module.fail_json(msg='Error creating policy "%s" with rules "%s": "%s"'
-                            % (policy_name, data, response[0]))
-                else:
-                    module.exit_json(changed=True)
+                write_policy(policy_name, desired_rules, conn, module)
+                module.exit_json(changed=True)
+
     except Exception as e:
         module.fail_json(msg=e.message)
 
-def write_policy(policy, rules, connection):
+
+def write_policy(policy, rules, connection, module):
     # We must replace " with a \" before POSTing
     data = '{"rules": "%s"}' % rules.replace('"', '\\"')
-    return connection.make_request('/v1/sys/policy/%s' % policy, method='POST', data=data)
+    response = connection.make_request('/v1/sys/policy/%s' % policy, method='POST', data=data)
+    if response[1] not in [200, 204]:
+        module.fail_json(msg='Error creating policy "%s" with rules "%s": "%s"'
+                % (policy, data, response[0]))
 
 
 def trim_rule(rule):
@@ -139,15 +135,13 @@ def trim_rule(rule):
 
     return rule
 
+
 def are_rules_equal(rule1, rule2):
     rule1 = trim_rule(rule1)
     rule2 = trim_rule(rule2)
-    with open('/tmp/test', 'w') as f:
-        f.write(rule1)
-        f.write('\n')
-        f.write(rule2)
 
     return rule1 == rule2
+
 
 if __name__ == '__main__':
     main()
