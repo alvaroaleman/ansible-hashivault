@@ -17,8 +17,8 @@ hashivault_policy-test: hashivault_policy
 	ansible-playbook test/playbook.yml -t testsetup,hashivault_policy -vvvv
 
 .PHONY: modules
-modules: library/hashivault_authbackend.py hashivault_policy.py
+modules: library/hashivault_authbackend.py hashivault_policy
 
 .PHONY: test
 test: modules
-	ansible-playbook test/playbook.yml -vvvv
+	ansible-playbook test/playbook.yml -vvv
