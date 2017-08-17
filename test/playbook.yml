@@ -1,70 +1,94 @@
 ---
 - hosts: localhost
   gather_facts: false
+  vars:
+    vault_addr: 127.0.0.1:8300
+    vault_token: helloworld
+    vault_containername: vault
   environment:
-    VAULT_ADDR: 'http://127.0.0.1:8300'
-    VAULT_TOKEN: 'helloworld'
+    VAULT_ADDR: 'http://{{ vault_addr }}'
+    VAULT_TOKEN: '{{ vault_token }}'
   tasks:
-    - name: Enable approle backend in checkmode
-      check_mode: true
-      register: registered_approle_backend_checkmode
-      hashivault_authbackend:
-        state: present
-        backend_type: approle
+    - name: Create vault container
+      tags: testsetup
+      docker_container:
+        name: '{{ vault_containername }}'
+        image: docker.io/vault
+        env:
+          VAULT_DEV_ROOT_TOKEN_ID: '{{ vault_token }}'
+          VAULT_LOCAL_CONFIG: '{"disable_mlock": true}'
+        published_ports:
+          - '127.0.0.1:8300:8200'
+    - name: Test hashivault_authbackend
+      tags:
+        - hashivault_authbackend
+      block:
+      - name: Enable approle backend in checkmode
+        check_mode: true
+        register: registered_approle_backend_checkmode
+        hashivault_authbackend:
+          state: present
+          backend_type: approle
 
-    - name: Assert approle backend creation caused changed event
-      assert:
-        that: registered_approle_backend_checkmode.changed
+      - name: Assert approle backend creation caused changed event
+        assert:
+          that: registered_approle_backend_checkmode.changed
 
-    - name: Enable approle backend
-      check_mode: false
-      register: registered_approle_backend
-      hashivault_authbackend:
-        state: present
-        backend_type: approle
+      - name: Enable approle backend
+        check_mode: false
+        register: registered_approle_backend
+        hashivault_authbackend:
+          state: present
+          backend_type: approle
 
-    - name: Assert approle backend creation caused changed event
-      assert:
-        that: registered_approle_backend.changed
+      - name: Assert approle backend creation caused changed event
+        assert:
+          that: registered_approle_backend.changed
 
-    - name: Enable approle backend
-      check_mode: false
-      register: registered_approle_backend_idempotence
-      hashivault_authbackend:
-        state: present
-        backend_type: approle
+      - name: Enable approle backend
+        check_mode: false
+        register: registered_approle_backend_idempotence
+        hashivault_authbackend:
+          state: present
+          backend_type: approle
 
-    - name: Assert approle backend creation idempotence
-      assert:
-        that: not registered_approle_backend_idempotence.changed
+      - name: Assert approle backend creation idempotence
+        assert:
+          that: not registered_approle_backend_idempotence.changed
 
-    - name: Delete approle backend in checkmode
-      check_mode: true
-      register: registered_approle_backend_delete_checkmode
-      hashivault_authbackend:
-        state: absent
-        backend_type: approle
+      - name: Delete approle backend in checkmode
+        check_mode: true
+        register: registered_approle_backend_delete_checkmode
+        hashivault_authbackend:
+          state: absent
+          backend_type: approle
 
-    - name: Assert approle backend deletion in checkmode caused changed event
-      assert:
-        that: registered_approle_backend_delete_checkmode.changed
+      - name: Assert approle backend deletion in checkmode caused changed event
+        assert:
+          that: registered_approle_backend_delete_checkmode.changed
 
-    - name: Delete approle backend
-      register: registered_approle_backend_delete
-      hashivault_authbackend:
-        state: absent
-        backend_type: approle
+      - name: Delete approle backend
+        register: registered_approle_backend_delete
+        hashivault_authbackend:
+          state: absent
+          backend_type: approle
 
-    - name: Assert approle backend deletion caused changed event
-      assert:
-        that: registered_approle_backend_delete.changed
+      - name: Assert approle backend deletion caused changed event
+        assert:
+          that: registered_approle_backend_delete.changed
 
-    - name: Test approle backend deletion idempotence
-      register: registered_approle_backend_delete_idempotence
-      hashivault_authbackend:
-        state: absent
-        backend_type: approle
+      - name: Test approle backend deletion idempotence
+        register: registered_approle_backend_delete_idempotence
+        hashivault_authbackend:
+          state: absent
+          backend_type: approle
 
-    - name: Assert approle backend deletion idempotence
-      assert:
-        that: not registered_approle_backend_delete_idempotence.changed
+      - name: Assert approle backend deletion idempotence
+        assert:
+          that: not registered_approle_backend_delete_idempotence.changed
+    - always:
+        - name: Remove vault container
+          tags: testsetup
+          docker_container:
+            state: absent
+            name: "{{ vault_containername }}"
